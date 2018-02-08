@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+
+"""
+    main.py
+"""
+
 from __future__ import print_function, division
 
 import sys
@@ -15,6 +21,16 @@ from torch.autograd import Variable
 # --
 # Helpers
 
+def parse_args():
+    parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
+    parser.add_argument('--batch-size', type=int, default=256, metavar='N')
+    parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N')
+    parser.add_argument('--epochs', type=int, default=10, metavar='N')
+    parser.add_argument('--lr', type=float, default=0.01, metavar='LR')
+    parser.add_argument('--momentum', type=float, default=0.5, metavar='M')
+    parser.add_argument('--seed', type=int, default=1, metavar='S')
+    parser.add_argument('--log-interval', type=int, default=100, metavar='N')
+    return parser.parse_args()
 
 
 class MNISTRandomLabels(datasets.MNIST):
@@ -36,38 +52,6 @@ class MNISTRandomLabels(datasets.MNIST):
       self.train_labels = labels
     else:
       self.test_labels = labels
-
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
-    parser.add_argument('--batch-size', type=int, default=256, metavar='N')
-    parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N')
-    parser.add_argument('--epochs', type=int, default=10, metavar='N')
-    parser.add_argument('--lr', type=float, default=0.01, metavar='LR')
-    parser.add_argument('--momentum', type=float, default=0.5, metavar='M')
-    parser.add_argument('--seed', type=int, default=1, metavar='S')
-    parser.add_argument('--log-interval', type=int, default=100, metavar='N')
-    return parser.parse_args()
-
-args = parse_args()
-
-torch.manual_seed(args.seed)
-torch.cuda.manual_seed(args.seed)
-
-kwargs = {'num_workers': 2, 'pin_memory': False}
-
-transform = transforms.Compose([
-   transforms.ToTensor(),
-   transforms.Normalize((0.1307,), (0.3081,))
-])
-
-train_dataset = datasets.MNIST('./data', train=True, download=True, transform=transform)
-# train_dataset = MNISTRandomLabels(root='./data', corrupt_prob=0.2, train=True, download=True, transform=transform)
-test_dataset = datasets.MNIST('./data', train=False, transform=transform)
-
-train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, **kwargs)
-test_loader  = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, **kwargs)
 
 class Net(nn.Module):
     def __init__(self, N=4096):
@@ -160,6 +144,33 @@ def ablate_train_acc(p=0.1):
     
     return correct / len(train_loader.dataset)
 
+# --
+# Args
+
+args = parse_args()
+
+torch.manual_seed(args.seed)
+torch.cuda.manual_seed(args.seed)
+
+# --
+# IO
+
+kwargs = {'num_workers': 2, 'pin_memory': False}
+
+transform = transforms.Compose([
+   transforms.ToTensor(),
+   transforms.Normalize((0.1307,), (0.3081,))
+])
+
+train_dataset = datasets.MNIST('./data', train=True, download=True, transform=transform)
+# train_dataset = MNISTRandomLabels(root='./data', corrupt_prob=0.2, train=True, download=True, transform=transform)
+test_dataset = datasets.MNIST('./data', train=False, transform=transform)
+
+train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, **kwargs)
+test_loader  = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, **kwargs)
+
+# --
+# Run
 
 model = Net().cuda()
 
@@ -187,7 +198,6 @@ for epoch in range(300):
         show_plot()
 
 # !! Possibly evaluating at p=0.5 alone is not enough
-
 
 # --
 # Ablation
